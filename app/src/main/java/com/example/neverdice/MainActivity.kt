@@ -2,16 +2,7 @@ package com.example.neverdice
 
 import android.os.Bundle
 import android.widget.TextView
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.appcompat.app.AppCompatActivity
 import com.example.neverdice.ui.theme.NeverDiceTheme
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
@@ -22,20 +13,20 @@ import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     lateinit var client: MqttAndroidClient
     lateinit var texto: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
 
         texto = findViewById(R.id.textoValor)
 
         conectarMQTT()
     }
+
     fun conectarMQTT() {
         val serverURI = "tcp://broker.hivemq.com:1883"
         val clientId = MqttClient.generateClientId()
@@ -82,18 +73,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    NeverDiceTheme {
-        Greeting("Android")
-    }
-}
+//@Composable
+//fun Greeting(name: String, modifier: Modifier = Modifier) {
+//    Text(
+//        text = "Hello $name!",
+//        modifier = modifier
+//    )
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun GreetingPreview() {
+//    NeverDiceTheme {
+//        Greeting("Android")
+//    }
+//}

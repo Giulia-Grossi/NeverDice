@@ -59,9 +59,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     //dependencias do mqtt
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
-    implementation("org.eclipse.paho:org.eclipse.paho.android.service:1.1.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("io.github.mayzs:paho.mqtt.android:1.3.0")
 
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
 
 
 
