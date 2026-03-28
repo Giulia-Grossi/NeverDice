@@ -4,14 +4,14 @@ import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.neverdice.ui.theme.NeverDiceTheme
-import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.IMqttActionListener
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.IMqttToken
-import org.eclipse.paho.client.mqttv3.MqttCallback
-import org.eclipse.paho.client.mqttv3.MqttClient
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import org.eclipse.paho.client.mqttv3.MqttMessage
+import info.mqtt.android.service.MqttAndroidClient
+import info.mqtt.android.service.MqttConnectOptions
+import info.mqtt.android.service.IMqttActionListener
+import info.mqtt.android.service.IMqttToken
+import info.mqtt.android.service.IMqttDeliveryToken
+import info.mqtt.android.service.MqttCallback
+import info.mqtt.android.service.MqttMessage
+import info.mqtt.android.service.MqttClient
 
 class MainActivity : AppCompatActivity() {
 
