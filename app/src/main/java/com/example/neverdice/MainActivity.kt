@@ -3,15 +3,14 @@ package com.example.neverdice
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.neverdice.ui.theme.NeverDiceTheme
 import info.mqtt.android.service.MqttAndroidClient
-import info.mqtt.android.service.MqttConnectOptions
-import info.mqtt.android.service.IMqttActionListener
-import info.mqtt.android.service.IMqttToken
-import info.mqtt.android.service.IMqttDeliveryToken
-import info.mqtt.android.service.MqttCallback
-import info.mqtt.android.service.MqttMessage
-import info.mqtt.android.service.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions
+import org.eclipse.paho.client.mqttv3.IMqttActionListener
+import org.eclipse.paho.client.mqttv3.IMqttToken
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttCallback
+import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.eclipse.paho.client.mqttv3.MqttClient
 
 class MainActivity : AppCompatActivity() {
 
@@ -72,19 +71,3 @@ class MainActivity : AppCompatActivity() {
         })
     }
 }
-
-//@Composable
-//fun Greeting(name: String, modifier: Modifier = Modifier) {
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    NeverDiceTheme {
-//        Greeting("Android")
-//    }
-//}
