@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 
 import info.mqtt.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
@@ -20,9 +21,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient
 
 import io.github.sceneview.SceneView
 import io.github.sceneview.node.ModelNode
-import io.github.sceneview.utils.setFullScreen
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,7 +43,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // setFullScreen(true) // Removido para evitar conflito de tipo, pode ser configurado via tema ou WindowManager
         setContentView(R.layout.activity_main)
 
         textoValor = findViewById(R.id.textoValor)
@@ -151,30 +149,41 @@ class MainActivity : AppCompatActivity() {
             else -> "models/d6.glb" // Modelo padrão
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val modelAsset = sceneView.modelLoader.loadModel(modelPath)
-            withContext(Dispatchers.Main) {
-                modelAsset?.let {
-                    currentDiceModelNode?.let { node -> sceneView.removeChild(node) }
-                    val modelNode = ModelNode(it).apply {
-                        transform(scale = 0.5f) // Ajuste a escala conforme necessário
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Carrega o modelo de forma assíncrona
+                val model = sceneView.modelLoader.loadModel(modelPath)
+
+                withContext(Dispatchers.Main) {
+                    model?.let { loadedModel ->
+                        // Remove o dado anterior se existir
+                        currentDiceModelNode?.let { sceneView.removeChildNode(it) }
+
+                        // Cria um novo ModelNode
+                        val modelNode = ModelNode(
+                            modelInstance = loadedModel.instance,
+                            scaleToUnits = 0.5f
+                        )
+
+                        // Adiciona à cena
+                        sceneView.addChildNode(modelNode)
+                        currentDiceModelNode = modelNode
+
+                        // Animação de rotação simples
+                        val animator = ObjectAnimator.ofFloat(modelNode, "rotation", 0f, 360f * 5)
+                        animator.duration = 2000
+                        animator.interpolator = AccelerateDecelerateInterpolator()
+                        animator.start()
+
+                        // Exibe o resultado após a animação
+                        sceneView.postDelayed({
+                            finalResultText.text = result.toString()
+                            finalResultText.visibility = View.VISIBLE
+                        }, 2000)
                     }
-                    sceneView.addChild(modelNode)
-                    currentDiceModelNode = modelNode
-
-                    // Animação de rotação simples
-                    val animator = ObjectAnimator.ofFloat(modelNode, "rotationY", 0f, 360f * 5) // 5 rotações completas
-                    animator.duration = 2000 // 2 segundos de animação
-                    animator.interpolator = AccelerateDecelerateInterpolator()
-                    animator.start()
-
-                    // Exibe o resultado após a animação (ou em um listener de animação mais complexo)
-                    // Por simplicidade, vamos exibir após um pequeno delay
-                    sceneView.postDelayed({
-                        finalResultText.text = result.toString()
-                        finalResultText.visibility = View.VISIBLE
-                    }, 2000) // Exibe após 2 segundos (duração da animação)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

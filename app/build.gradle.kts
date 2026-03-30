@@ -65,7 +65,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.github.hannesa2:paho.mqtt.android:4.5")
     //dependencias para animações
-    implementation("io.github.sceneview:sceneview:1.0.0")
+    implementation("io.github.sceneview:sceneview:2.3.3")
 
 
 

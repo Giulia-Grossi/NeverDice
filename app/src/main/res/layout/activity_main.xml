@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -17,7 +18,7 @@
         android:gravity="center"
         android:layout_marginBottom="24dp" />
 
-    <!-- Área de exibição do dado (placeholder para animação 3D ) -->
+    <!-- Área de exibição do dado (SceneView para animação 3D ) -->
     <FrameLayout
         android:id="@+id/diceContainer"
         android:layout_width="match_parent"
@@ -26,15 +27,10 @@
         android:background="@drawable/dice_container_bg"
         android:layout_marginBottom="16dp">
 
-        <!-- LottieAnimationView para animação do dado -->
-        <com.airbnb.lottie.LottieAnimationView
+        <io.github.sceneview.SceneView
             android:id="@+id/diceDisplay"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            app:lottie_autoPlay="false"
-            app:lottie_loop="false"
-            app:lottie_rawRes="@raw/dice_default" /> <!-- Animação padrão -->
+            android:layout_height="match_parent" />
 
         <!-- TextView para exibir o resultado final sobre o dado -->
         <TextView
@@ -42,12 +38,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:text=""
             android:textSize="48sp"
             android:textStyle="bold"
             android:textColor="@color/accent_red"
-            android:visibility="gone"
-            android:text="" />
-
+            android:visibility="gone" /> <!-- Inicialmente invisível -->
 
     </FrameLayout>
 
