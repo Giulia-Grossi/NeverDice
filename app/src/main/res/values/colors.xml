@@ -7,4 +7,12 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- RPG Theme Colors -->
+    <color name="background_dark">#1a1a2e</color>
+    <color name="text_primary">#ffffff</color>
+    <color name="text_secondary">#b0b0b0</color>
+    <color name="button_primary">#d4af37</color>
+    <color name="button_secondary">#8b4513</color>
+    <color name="accent_gold">#ffd700</color>
+    <color name="accent_red">#dc143c</color>
 </resources>

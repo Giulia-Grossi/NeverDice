@@ -64,6 +64,7 @@ dependencies {
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.github.hannesa2:paho.mqtt.android:4.5")
+    implementation("com.airbnb.android:lottie:6.1.0")
 
 
 

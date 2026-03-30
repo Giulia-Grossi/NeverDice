@@ -1,7 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/textoValor"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="carregando..."
-    android:textSize="24sp"/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_dark"
+    android:padding="16dp">
+
+    <!-- Header com título -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="NeverDice"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Área de exibição do dado (placeholder para animação 3D ) -->
+    <FrameLayout
+        android:id="@+id/diceContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/dice_container_bg"
+        android:layout_marginBottom="16dp">
+
+        <!-- LottieAnimationView para animação do dado -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/diceDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"
+            app:lottie_rawRes="@raw/dice_default" /> <!-- Animação padrão -->
+
+        <!-- TextView para exibir o resultado final sobre o dado -->
+        <TextView
+            android:id="@+id/finalResultText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:textColor="@color/accent_red"
+            android:visibility="gone"
+            android:text="" />
+
+
+    </FrameLayout>
+
+    <!-- Área de resultado da rolagem -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/result_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <!-- Tipo de dado -->
+        <TextView
+            android:id="@+id/diceType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tipo de Dado: Aguardando..."
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Resultado -->
+        <TextView
+            android:id="@+id/textoValor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resultado: Aguardando rolagem..."
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- Botões de ação -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <!-- Botão Salvar Resultado -->
+        <Button
+            android:id="@+id/btnSaveResult"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Salvar Resultado"
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_primary_bg"
+            android:textStyle="bold" />
+
+        <!-- Botão Histórico -->
+        <Button
+            android:id="@+id/btnHistory"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Histórico"
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_secondary_bg"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Status de conexão -->
+    <TextView
+        android:id="@+id/connectionStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Status: Desconectado"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center" />
+</LinearLayout>
