@@ -1,11 +1,14 @@
 package com.example.neverdice
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.airbnb.lottie.LottieAnimationView
+
 import info.mqtt.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
@@ -14,7 +17,17 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.MqttClient
+
+import io.github.sceneview.SceneView
+import io.github.sceneview.node.ModelNode
+import io.github.sceneview.utils.setFullScreen
+
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,11 +37,14 @@ class MainActivity : AppCompatActivity() {
     lateinit var connectionStatus: TextView
     lateinit var btnSaveResult: Button
     lateinit var btnHistory: Button
-    lateinit var lottieAnimationView: LottieAnimationView
+    lateinit var sceneView: SceneView
     lateinit var finalResultText: TextView
+
+    private var currentDiceModelNode: ModelNode? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // setFullScreen(true) // Removido para evitar conflito de tipo, pode ser configurado via tema ou WindowManager
         setContentView(R.layout.activity_main)
 
         textoValor = findViewById(R.id.textoValor)
@@ -36,9 +52,10 @@ class MainActivity : AppCompatActivity() {
         connectionStatus = findViewById(R.id.connectionStatus)
         btnSaveResult = findViewById(R.id.btnSaveResult)
         btnHistory = findViewById(R.id.btnHistory)
-        lottieAnimationView = findViewById(R.id.diceDisplay) // Usando o mesmo ID para o LottieAnimationView
-        finalResultText = findViewById(R.id.finalResultText) // Inicializa o novo TextView
+        sceneView = findViewById(R.id.diceDisplay)
+        finalResultText = findViewById(R.id.finalResultText)
 
+        // Configura listeners para os botões
         btnSaveResult.setOnClickListener {
             Toast.makeText(this, "Funcionalidade de salvar resultado em desenvolvimento!", Toast.LENGTH_SHORT).show()
         }
@@ -46,7 +63,16 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Funcionalidade de histórico em desenvolvimento!", Toast.LENGTH_SHORT).show()
         }
 
+        setupSceneView()
         conectarMQTT()
+    }
+
+    private fun setupSceneView() {
+        sceneView.apply {
+            // Configurações básicas do SceneView
+            // Por exemplo, iluminação ambiente, etc.
+            // Não adicionamos nenhum modelo aqui inicialmente, será feito via MQTT
+        }
     }
 
     fun conectarMQTT() {
@@ -57,8 +83,8 @@ class MainActivity : AppCompatActivity() {
 
         val options = MqttConnectOptions()
         options.isCleanSession = true
-        options.userName = "esp32"
-        options.password = "esp32".toCharArray()
+        options.userName = "esp32" // Substitua pelo seu username
+        options.password = "esp32".toCharArray() // Substitua pela sua senha
 
         connectionStatus.text = "Status: Conectando..."
 
@@ -78,7 +104,7 @@ class MainActivity : AppCompatActivity() {
     fun inscreverTopico() {
         val topic = "teste/dado"
 
-        client.subscribe(topic,0)
+        client.subscribe(topic, 0)
 
         client.setCallback(object : MqttCallback{
             override fun connectionLost(cause: Throwable?) {
@@ -88,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun messageArrived(topic: String?, message: MqttMessage?) {
                 val payload = message.toString()
-                runOnUiThread {
+                runOnUiThread{
                     try {
                         val jsonObject = JSONObject(payload)
                         val tipoDado = jsonObject.getString("tipoDado")
@@ -97,32 +123,59 @@ class MainActivity : AppCompatActivity() {
                         diceType.text = "Tipo de Dado: $tipoDado"
                         textoValor.text = "Resultado: $resultado"
 
-                        // Exibe o resultado final sobre o dado
-                        finalResultText.text = resultado.toString()
-                        finalResultText.visibility = TextView.VISIBLE
+                        // Esconde o resultado anterior e inicia a animação
+                        finalResultText.visibility = View.GONE
+                        loadAndAnimateDice(tipoDado, resultado)
 
-                        // Lógica para exibir animação do dado
-                        // Você precisará de arquivos Lottie JSON para cada tipo de dado
-                        when (tipoDado) {
-                            "d4" -> lottieAnimationView.setAnimation(R.raw.dice_d4) // Exemplo, você precisará criar R.raw.dice_d4.json
-                            "d6" -> lottieAnimationView.setAnimation(R.raw.dice_d6)
-                            "d8" -> lottieAnimationView.setAnimation(R.raw.dice_d8)
-                            "d10" -> lottieAnimationView.setAnimation(R.raw.dice_d10)
-                            "d12" -> lottieAnimationView.setAnimation(R.raw.dice_d12)
-                            "d20" -> lottieAnimationView.setAnimation(R.raw.dice_d20)
-                            else -> lottieAnimationView.setAnimation(R.raw.dice_default) // Animação padrão
+                    } catch (e: Exception) {
+                        textoValor.text = "Erro ao processar mensagem: ${e.message}"
+                        Toast.makeText(this@MainActivity, "Erro ao processar mensagem MQTT: ${e.message}", Toast.LENGTH_LONG).show()
                     }
-                    lottieAnimationView.playAnimation()
-                } catch (e: Exception){
-                    textoValor.text = "Erro ao processar mensagem: ${e.message}"
-                    Toast.makeText(this@MainActivity, "Erro ao processar mensagem MQTT: ${e.message}", Toast.LENGTH_LONG).show()
-                }
                 }
             }
 
             override fun deliveryComplete(token: IMqttDeliveryToken?) {
-
+                // Não é necessário implementar para este caso
             }
         })
+    }
+
+    private fun loadAndAnimateDice(diceType: String, result: Int) {
+        val modelPath = when (diceType.lowercase()) { // Usando lowercase() para evitar depreciação
+            "d4" -> "models/d4.glb"
+            "d6" -> "models/d6.glb"
+            "d8" -> "models/d8.glb"
+            "d10" -> "models/d10.glb"
+            "d12" -> "models/d12.glb"
+            "d20" -> "models/d20.glb"
+            else -> "models/d6.glb" // Modelo padrão
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val modelAsset = sceneView.modelLoader.loadModel(modelPath)
+            withContext(Dispatchers.Main) {
+                modelAsset?.let {
+                    currentDiceModelNode?.let { node -> sceneView.removeChild(node) }
+                    val modelNode = ModelNode(it).apply {
+                        transform(scale = 0.5f) // Ajuste a escala conforme necessário
+                    }
+                    sceneView.addChild(modelNode)
+                    currentDiceModelNode = modelNode
+
+                    // Animação de rotação simples
+                    val animator = ObjectAnimator.ofFloat(modelNode, "rotationY", 0f, 360f * 5) // 5 rotações completas
+                    animator.duration = 2000 // 2 segundos de animação
+                    animator.interpolator = AccelerateDecelerateInterpolator()
+                    animator.start()
+
+                    // Exibe o resultado após a animação (ou em um listener de animação mais complexo)
+                    // Por simplicidade, vamos exibir após um pequeno delay
+                    sceneView.postDelayed({
+                        finalResultText.text = result.toString()
+                        finalResultText.visibility = View.VISIBLE
+                    }, 2000) // Exibe após 2 segundos (duração da animação)
+                }
+            }
+        }
     }
 }
