@@ -66,6 +66,7 @@ dependencies {
     implementation("com.github.hannesa2:paho.mqtt.android:4.5")
     //dependencias para animações
     implementation("io.github.sceneview:sceneview:2.3.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
 
 
 
