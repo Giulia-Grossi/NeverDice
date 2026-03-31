@@ -20,7 +20,6 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.MqttClient
 
 import io.github.sceneview.SceneView
-import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.ModelNode
 
 import kotlinx.coroutines.Dispatchers
@@ -132,7 +131,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadAndAnimateDice(diceType: String, result: Int) {
-        val modelPath = when (diceType.lowercase()) {
+        val modelPath = when (diceType.lowercase()) { // Usando lowercase() para evitar depreciação
             "d4" -> "models/d4.glb"
             "d6" -> "models/d6.glb"
             "d8" -> "models/d8.glb"
@@ -150,28 +149,22 @@ class MainActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     model?.let { loadedModel ->
                         // Remove o dado anterior se existir
-                        currentDiceModelNode?.let { sceneView.removeNode(it) }
+                        currentDiceModelNode?.let { sceneView.removeChildNode(it) }
 
                         // Cria um novo ModelNode
                         val modelNode = ModelNode(
-                            engine = sceneView.engine,
-                            modelInstance = loadedModel.instance
-                        ).apply {
-                            scale = io.github.sceneview.math.Scale(0.5f)
-                        }
+                            modelInstance = loadedModel.instance,
+                            scaleToUnits = 0.5f
+                        )
 
                         // Adiciona à cena
-                        sceneView.addNode(modelNode)
+                        sceneView.addChildNode(modelNode)
                         currentDiceModelNode = modelNode
 
                         // Animação de rotação simples
                         val animator = ObjectAnimator.ofFloat(modelNode, "rotation", 0f, 360f * 5)
                         animator.duration = 2000
                         animator.interpolator = AccelerateDecelerateInterpolator()
-                        animator.addUpdateListener { animation ->  ->
-                            val value = animation.animatedValue as Float
-                            modelNode.rotation = Rotation(y = value)
-                        }
                         animator.start()
 
                         // Exibe o resultado após a animação
