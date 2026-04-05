@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <!-- RPG Theme Colors -->
-    <color name="background_dark">#1a1a2e</color>
-    <color name="text_primary">#ffffff</color>
-    <color name="text_secondary">#b0b0b0</color>
-    <color name="button_primary">#d4af37</color>
-    <color name="button_secondary">#8b4513</color>
-    <color name="accent_gold">#ffd700</color>
-    <color name="accent_red">#dc143c</color>
+
+    <!-- Cores Temáticas RPG -->
+    <color name="background_dark">#1A1A2E</color>
+    <color name="primary_color">#0F3460</color>
+    <color name="accent_color">#E94560</color>
+    <color name="text_light">#E0E0E0</color>
+    <color name="text_secondary">#A0A0A0</color>
+    <color name="button_primary">#E94560</color>
+    <color name="button_secondary">#0F3460</color>
+    <color name="container_background">#2E3A59</color>
 </resources>

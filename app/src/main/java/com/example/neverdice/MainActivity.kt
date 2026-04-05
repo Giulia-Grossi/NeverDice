@@ -1,6 +1,6 @@
 package com.example.neverdice
 
-import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -20,13 +20,15 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.MqttClient
 
 import io.github.sceneview.SceneView
+import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.ModelNode
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-
+import kotlin.math.PI
+import kotlin.math.atan
+import kotlin.math.sqrt
 
 class MainActivity : AppCompatActivity() {
 
@@ -61,12 +63,11 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Funcionalidade de histórico em desenvolvimento!", Toast.LENGTH_SHORT).show()
         }
 
-
         conectarMQTT()
     }
 
     fun conectarMQTT() {
-        val serverURI = "mqtts://mqtt.astrum.app.br:8883"
+        val serverURI = "mqtts://mqtt.astrum.app.br:8883" // Altere para o seu broker
         val clientId = MqttClient.generateClientId()
 
         client = MqttAndroidClient(applicationContext, serverURI, clientId)
@@ -92,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun inscreverTopico() {
-        val topic = "teste/dado"
+        val topic = "dado/resultado" // Tópico para receber o resultado da câmera
 
         client.subscribe(topic, 0)
 
@@ -124,50 +125,110 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                // Não é necessário implementar para este caso
-            }
+            override fun deliveryComplete(token: IMqttDeliveryToken?) {}
         })
     }
 
+    private fun calculateTargetRotation(currentDice: String, face: Int): Rotation {
+        var targetX = 0f
+        var targetY = 0f
+        var targetZ = 0f
+
+        when (currentDice.lowercase()) {
+            "d4" -> {
+                // O d4 rotaciona em torno do centro de massa
+                val angleY = (face - 1) * (PI.toFloat() * 2 / 3)
+                targetX = 0.55f // Inclinação para frente para mostrar a face
+                targetY = angleY
+            }
+            "d6" -> {
+                when (face) {
+                    1 -> { targetX = 0f; targetY = 0f }
+                    2 -> { targetX = 0f; targetY = PI.toFloat() }
+                    3 -> { targetX = 0f; targetY = PI.toFloat() / 2 }
+                    4 -> { targetX = 0f; targetY = -PI.toFloat() / 2 }
+                    5 -> { targetX = -PI.toFloat() / 2; targetY = 0f }
+                    6 -> { targetX = PI.toFloat() / 2; targetY = 0f }
+                }
+            }
+            "d8" -> {
+                // Octaedro: faces inclinadas
+                val angleY = (if (face > 4) face - 4 else face) * (PI.toFloat() / 2)
+                targetX = if (face <= 4) 0.62f else -0.62f
+                targetY = angleY + (PI.toFloat() / 4)
+            }
+            "d10" -> {
+                // Baseado na sua geometria customizada de 10 lados
+                val angleStep = (PI.toFloat() * 2) / 5 // 5 faces em cima, 5 embaixo
+                targetY = (kotlin.math.floor((face - 1) / 2.0)).toFloat() * angleStep
+                targetX = if (face % 2 == 0) 0.75f else -0.75f
+            }
+            "d20" -> {
+                // Aproximação para Icosaedro
+                val phi = 1.26f // Ângulo de inclinação das faces
+                if (face <= 5) {
+                    targetX = phi
+                    targetY = (face - 1) * (PI.toFloat() * 2 / 5)
+                } else if (face <= 15) {
+                    targetX = (if (face % 2 == 0) 0.2f else -0.2f)
+                    targetY = face * (PI.toFloat() * 2 / 10)
+                } else {
+                    targetX = -phi
+                    targetY = (face - 16) * (PI.toFloat() * 2 / 5)
+                }
+            }
+        }
+        return Rotation(x = targetX, y = targetY, z = targetZ)
+    }
+
     private fun loadAndAnimateDice(diceType: String, result: Int) {
-        val modelPath = when (diceType.lowercase()) { // Usando lowercase() para evitar depreciação
+        val modelPath = when (diceType.lowercase()) {
             "d4" -> "models/d4.glb"
             "d6" -> "models/d6.glb"
             "d8" -> "models/d8.glb"
             "d10" -> "models/d10.glb"
             "d12" -> "models/d12.glb"
             "d20" -> "models/d20.glb"
-            else -> "models/d6.glb" // Modelo padrão
+            else -> "models/d6.glb"
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // Carrega o modelo de forma assíncrona
                 val model = sceneView.modelLoader.loadModel(modelPath)
 
                 withContext(Dispatchers.Main) {
                     model?.let { loadedModel ->
-                        // Remove o dado anterior se existir
-                        currentDiceModelNode?.let { sceneView.removeChildNode(it) }
+                        // Remove o modelo anterior se existir
+                        currentDiceModelNode?.let { sceneView.removeNode(it) }
 
-                        // Cria um novo ModelNode
+                        // Cria o novo nó do modelo
                         val modelNode = ModelNode(
-                            modelInstance = loadedModel.instance,
-                            scaleToUnits = 0.5f
-                        )
+                            modelInstance = loadedModel.instance
+                        ).apply {
+                            // Ajusta a escala se necessário
+                            scale = io.github.sceneview.math.Scale(0.5f)
+                        }
 
-                        // Adiciona à cena
-                        sceneView.addChildNode(modelNode)
+                        // Adiciona o nó à cena
+                        sceneView.addNode(modelNode)
                         currentDiceModelNode = modelNode
 
-                        // Animação de rotação simples
-                        val animator = ObjectAnimator.ofFloat(modelNode, "rotation", 0f, 360f * 5)
+                        // Animação de rotação usando ValueAnimator
+                        val targetRotation = calculateTargetRotation(diceType, result)
+                        val animator = ValueAnimator.ofFloat(0f, 360f * 5)
                         animator.duration = 2000
                         animator.interpolator = AccelerateDecelerateInterpolator()
+                        animator.addUpdateListener { animation ->
+                            val value = animation.animatedValue as Float
+                            // Interpolação para a rotação final
+                            modelNode.rotation = Rotation(
+                                x = targetRotation.x + (value / (360f * 5)) * (targetRotation.x - modelNode.rotation.x),
+                                y = targetRotation.y + (value / (360f * 5)) * (targetRotation.y - modelNode.rotation.y),
+                                z = targetRotation.z + (value / (360f * 5)) * (targetRotation.z - modelNode.rotation.z)
+                            )
+                        }
                         animator.start()
 
-                        // Exibe o resultado após a animação
                         sceneView.postDelayed({
                             finalResultText.text = result.toString()
                             finalResultText.visibility = View.VISIBLE
