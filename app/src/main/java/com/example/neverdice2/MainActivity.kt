@@ -4,139 +4,143 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.neverdice2.mqtt.DiceResult
 import com.example.neverdice2.mqtt.MqttManager
 import com.example.neverdice2.render.DiceRenderer
+import com.example.neverdice2.utils.RollHistory
 import io.github.sceneview.SceneView
 
-/**
- * Activity principal do aplicativo.
- * Coordena a comunicação MQTT e a renderização 3D.
- */
 class MainActivity : AppCompatActivity() {
 
-    // View que exibe a cena 3D
     private lateinit var sceneView: SceneView
-
-    // Gerenciador de renderização dos dados
     private lateinit var diceRenderer: DiceRenderer
-
-    // Gerenciador de conexão MQTT
     private lateinit var mqttManager: MqttManager
-
-    // Botão que inicia a rolagem
     private lateinit var rollButton: Button
-
-    // TextView que exibe o resultado centralizado
+    private lateinit var historyButton: Button
     private lateinit var resultTextView: TextView
+    private lateinit var diceSpinner: Spinner
 
-    // Dado atualmente selecionado (padrão: D20)
+    // Histórico de rolagens
+    private val rollHistory = RollHistory()
+
+    // Tipos de dado disponíveis
+    private val diceTypes = arrayOf("d4", "d6", "d8", "d10", "d12", "d20")
     private var currentDiceType = "d20"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Configura o ciclo de vida do SceneView
         sceneView = findViewById(R.id.sceneView)
         sceneView.lifecycle = lifecycle
 
-        // Inicializa as views e componentes
         initializeViews()
+        setupDiceSpinner()
         initializeComponents()
         setupListeners()
 
-        // Conecta ao broker MQTT
         connectToMqttBroker()
     }
 
-    /**
-     * Inicializa as referências das views do layout.
-     */
     private fun initializeViews() {
         rollButton = findViewById(R.id.rollButton)
+        historyButton = findViewById(R.id.historyButton)
         resultTextView = findViewById(R.id.resultTextView)
+        diceSpinner = findViewById(R.id.diceSpinner)
     }
 
     /**
-     * Inicializa os gerenciadores de renderização e MQTT.
+     * Configura o Spinner (menu suspenso) para seleção do tipo de dado.
      */
-    private fun initializeComponents() {
-        // Cria o renderizador 3D associado ao SceneView
-        diceRenderer = DiceRenderer(sceneView)
+    private fun setupDiceSpinner() {
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            diceTypes.map { it.uppercase() }
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        diceSpinner.adapter = adapter
 
-        // Cria o gerenciador MQTT
+        // Define o D20 como padrão (índice 5)
+        diceSpinner.setSelection(5)
+
+        diceSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                currentDiceType = diceTypes[position]
+                Toast.makeText(this@MainActivity, "Dado selecionado: ${currentDiceType.uppercase()}", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Mantém o D20 como padrão
+                currentDiceType = "d20"
+            }
+        }
+    }
+
+    private fun initializeComponents() {
+        diceRenderer = DiceRenderer(sceneView)
         mqttManager = MqttManager()
 
-        // Configura os callbacks do MQTT
         setupMqttCallbacks()
     }
 
-    /**
-     * Configura os callbacks que serão chamados quando eventos MQTT ocorrerem.
-     */
     private fun setupMqttCallbacks() {
-        // Callback chamado quando um resultado de rolagem é recebido
         mqttManager.onResultReceived = { diceResult ->
-            // Este código é executado em uma thread de background.
-            // Precisamos mudar para a UI thread para atualizar a interface.
             runOnUiThread {
-                // Para a animação no resultado recebido
+                // Para a animação
                 diceRenderer.showResult(diceResult.result)
 
                 // Exibe o número grande centralizado
                 resultTextView.text = diceResult.result.toString()
                 resultTextView.visibility = View.VISIBLE
 
-                // Exibe um Toast com informações completas
+                // Adiciona ao histórico
+                rollHistory.add(diceResult)
+
+                // Exibe Toast com informações
                 Toast.makeText(
                     this,
                     "${diceResult.player} rolou ${diceResult.dice}: ${diceResult.result}",
                     Toast.LENGTH_LONG
                 ).show()
 
-                // Esconde o número após 10 segundos
+                // Esconde o número após 3 segundos
                 Handler(Looper.getMainLooper()).postDelayed({
                     resultTextView.visibility = View.INVISIBLE
-                }, 10000)
+                }, 3000)
             }
         }
 
-        // Callback chamado quando a conexão MQTT é estabelecida
         mqttManager.onConnected = {
             runOnUiThread {
                 Toast.makeText(this, "Conectado ao broker MQTT", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Callback chamado quando a conexão é perdida
         mqttManager.onConnectionLost = { cause ->
             runOnUiThread {
-                Toast.makeText(
-                    this,
-                    "Conexão perdida. Tentando reconectar...",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "Conexão perdida. Tentando reconectar...", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    /**
-     * Configura os listeners dos botões.
-     */
     private fun setupListeners() {
         rollButton.setOnClickListener {
             onRollButtonClicked()
         }
+
+        historyButton.setOnClickListener {
+            showHistoryDialog()
+        }
     }
 
-    /**
-     * Chamado quando o botão de rolagem é pressionado.
-     */
     private fun onRollButtonClicked() {
         // Carrega o modelo 3D do dado selecionado
         diceRenderer.loadDice(currentDiceType)
@@ -147,7 +151,7 @@ class MainActivity : AppCompatActivity() {
         // Esconde o resultado anterior
         resultTextView.visibility = View.INVISIBLE
 
-        // Publica uma mensagem MQTT solicitando a rolagem
+        // Publica a solicitação MQTT
         val requestPayload = """
             {
                 "command": "roll",
@@ -162,16 +166,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Conecta ao broker MQTT.
+     * Exibe um diálogo com o histórico de rolagens.
      */
+    private fun showHistoryDialog() {
+        val history = rollHistory.getFormattedHistory()
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("📜 Histórico de Rolagens")
+            .setMessage(history)
+            .setPositiveButton("Limpar") { _, _ ->
+                rollHistory.clear()
+                Toast.makeText(this, "Histórico limpo!", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Fechar", null)
+            .show()
+    }
+
     private fun connectToMqttBroker() {
-        // Configurações do broker MQTT
         val brokerUrl = "ssl://mqtt.astrum.app.br:8883"
         val username = "esp32"
-        val password = "esp32"  // Preencha se houver senha
+        val password = "esp32"
         val resultTopic = "dice/result"
 
-        // Inicia a conexão
         mqttManager.connect(
             brokerUrl = brokerUrl,
             username = username,
@@ -181,7 +197,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        // Libera os recursos antes da Activity ser destruída
         mqttManager.disconnect()
         diceRenderer.destroy()
         sceneView.destroy()
